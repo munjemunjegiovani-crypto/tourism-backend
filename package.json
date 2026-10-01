@@ -1,7 +1,7 @@
 {
   "name": "tourism-backend",
   "version": "1.0.0",
-  "description": "REST API for the Africa tourism platform (Cameroon first)",
+  "description": "REST API for Africa Discover, the African tourism discovery platform",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -11,7 +11,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:images": "tsx src/db/images.ts",
+    "db:reset": "tsx src/db/reset.ts && drizzle-kit migrate && tsx src/db/seed.ts"
   },
   "repository": {
     "type": "git",

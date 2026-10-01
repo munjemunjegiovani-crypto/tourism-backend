@@ -11,6 +11,10 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     res.status(err.status).json({ error: { code: err.code, message: err.message } });
     return;
   }
+  if (err?.type === "entity.parse.failed") {
+    res.status(400).json({ error: { code: "BAD_JSON", message: "Request body is not valid JSON" } });
+    return;
+  }
   console.error(err);
   res.status(500).json({
     error: {

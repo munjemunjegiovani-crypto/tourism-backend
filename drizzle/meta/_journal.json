@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1790865629707,
+      "when": 1790868726994,
       "tag": "0000_enable_postgis",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1790865634932,
-      "tag": "0001_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1790867829697,
-      "tag": "0002_attraction_photo_credit",
+      "when": 1790868728062,
+      "tag": "0001_africa_discover_schema",
       "breakpoints": true
     }
   ]

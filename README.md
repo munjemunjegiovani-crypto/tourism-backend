@@ -1,104 +1,112 @@
-# Tourism Backend
+# Africa Discover API (tourism-backend)
 
-REST API for the Africa tourism platform (Cameroon first). It serves attractions, nearby hotels/restaurants/guides, map points and tracked booking links to the [frontend](https://github.com/munjemunjegiovani-crypto/tourism-frontend).
+The backend for **Africa Discover**, the tourism discovery platform. It's a REST API in Node.js, Express and TypeScript, backed by **PostgreSQL** with the **PostGIS** extension for "near me" and map queries.
 
-**Stack:** Node.js 20+ · Express 5 · TypeScript · Drizzle ORM · PostgreSQL + PostGIS (Neon) · Zod
+The website lives in a separate repo, [`tourism-frontend`](../tourism-frontend). It only talks to this API.
 
-## Run it locally (Ubuntu)
+## What's inside
 
-### 1. Install Node.js 20+ (skip if `node -v` already shows 20 or higher)
+- **Catalog:** 26 countries (11 with full travel guides), 108 cities, 93 destinations, 10 categories, 13 activities, 12 experiences and 13 travel-guide articles.
+- **Places:** 17 real airports and 9 real markets (shown without ratings), plus clearly marked *demo* hotels and restaurants near popular destinations.
+- **Search:** understands phrases like "waterfalls near Douala", "beaches in Cameroon" and "things to do in Nairobi". It also powers the search-box suggestions.
+- **Geo:** nearby destinations, distances and map points (PostGIS `ST_DWithin` / `ST_Distance`).
+- **Accounts:** sign-up and login with scrypt password hashes and hashed session tokens; profile, favorites ("saved" and "visited"), trips with stops and route summary, and reviews.
+- **Money:** `/go/:slug` logs a click and redirects to a partner's booking link (affiliate-ready).
+
+Seeded reviews are marked `isSample`. Demo places are marked `isDemo`. The website labels both.
+
+## Run it locally
+
+You need Node 22+ and PostgreSQL 14+ with PostGIS. On Ubuntu:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
+sudo apt install postgresql postgis
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+sudo -u postgres createdb tourism
 ```
 
-### 2. Get a database
-
-**Option A — Neon (recommended, nothing to install)**
-
-1. Create a free project at [neon.tech](https://neon.tech).
-2. Copy the connection string from the dashboard (it ends with `?sslmode=require`).
-
-**Option B — Local Postgres with PostGIS**
+Then:
 
 ```bash
-sudo apt-get install -y postgresql postgresql-16-postgis-3
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" -c "CREATE DATABASE tourism;"
-```
-
-### 3. Install, configure, migrate, seed
-
-```bash
-git clone https://github.com/munjemunjegiovani-crypto/tourism-backend.git
-cd tourism-backend
+cp .env.example .env      # adjust DATABASE_URL if needed
 npm install
-cp .env.example .env      # then open .env and set DATABASE_URL
-npm run db:migrate        # creates PostGIS + all tables
-npm run db:seed           # adds Cameroon regions, attractions and demo businesses
-npm run dev               # API on http://localhost:4000
+npm run db:reset          # drops and recreates the schema, migrates, seeds
+npm run db:images         # optional, needs internet: fetches destination photos + credits from Wikimedia Commons
+npm run dev               # http://localhost:4000
 ```
 
-Check it works: open <http://localhost:4000/health> and <http://localhost:4000/api/v1/attractions>.
+Check it works: `curl localhost:4000/health` should return `{"status":"ok","database":"ok"}`.
 
-## Scripts
+> Upgrading from the earlier Kamer Trails version? Run `npm run db:reset` once. The schema changed completely.
 
-| Command | What it does |
+### Scripts
+
+| Script | What it does |
 | --- | --- |
-| `npm run dev` | Start the API with auto-reload |
-| `npm run build` / `npm start` | Compile to `dist/` and run the compiled server (production) |
-| `npm run typecheck` | Check types without building |
-| `npm run db:generate` | Create a new migration after editing `src/db/schema.ts` |
-| `npm run db:migrate` | Apply migrations to the database in `DATABASE_URL` |
-| `npm run db:seed` | Insert/refresh development data (safe to run again) |
-| `npm run db:studio` | Browse the database in your browser |
+| `npm run dev` | Start with auto-reload |
+| `npm run build` / `npm start` | Compile to `dist/` and run it |
+| `npm run typecheck` | TypeScript check |
+| `npm run db:generate` | Create a migration after editing `src/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations |
+| `npm run db:seed` | Insert or update the catalog (keeps users, favorites and trips) |
+| `npm run db:reset` | Drop everything, migrate and seed. Refuses to run in production |
+| `npm run db:images` | Look up photos on Wikimedia Commons for destinations without one |
+| `npm run db:studio` | Browse the database in Drizzle Studio |
 
-## API (v1)
+### Environment
 
-All responses are JSON. Lists return `{ data, nextCursor }`; pass `?cursor=<nextCursor>` for the next page. Errors return `{ error: { code, message } }`.
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Postgres connection string (Neon works; keep `?sslmode=require`) |
+| `PORT` | API port (default 4000) |
+| `CORS_ORIGIN` | Website URL(s) allowed to call the API, comma-separated |
+| `IP_HASH_SALT` | Random string used to hash IPs in click logs |
+| `CONTACT_EMAIL` | Optional; sent in the User-Agent by `db:images` |
+| `NODE_ENV` | `development` or `production` |
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/health` | API and database status |
-| GET | `/api/v1/countries` | Countries |
-| GET | `/api/v1/countries/:slug/regions` | Regions of a country |
-| GET | `/api/v1/regions/:slug/cities` | Cities of a region |
-| GET | `/api/v1/categories?type=attraction\|business` | Categories |
-| GET | `/api/v1/attractions?country=&region=&city=&category=&q=&limit=&cursor=` | List and filter attractions |
-| GET | `/api/v1/attractions/:slug` | Attraction details |
-| GET | `/api/v1/attractions/:slug/nearby?type=hotel&radius=10000` | Businesses near an attraction (sponsored first, then closest) |
-| GET | `/api/v1/businesses?country=&region=&city=&category=&q=` | List and filter businesses |
-| GET | `/api/v1/businesses/:slug` | Business details |
-| GET | `/api/v1/map?bbox=minLng,minLat,maxLng,maxLat` | Points inside the visible map area |
-| GET | `/api/v1/go/:slug?src=` | Logs the click, then redirects to the booking/affiliate link |
+## Endpoints
 
-Example: `GET /api/v1/attractions/lobe-falls/nearby?type=hotel&radius=3000`
+Everything is under `/api/v1`. Responses are JSON. Errors look like `{ "error": { "code", "message" } }`.
 
-## Project structure
+**Catalog**
+- `GET /categories`, `GET /activities`
+- `GET /countries?featured&region`, `GET /countries/:slug`
+- `GET /experiences`, `GET /experiences/:slug`
+- `GET /articles?section=essentials|tips`, `GET /articles/:slug`
+
+**Destinations**
+- `GET /destinations?country&city&category&tag&q&minRating&price&difficulty&month&activity&near=lat,lng&radius&sort&limit&offset`. `sort` is one of `recommended`, `rating`, `nearest`, `popular`, `newest`, `name`
+- `GET /destinations/nearby?near=lat,lng&radius`
+- `GET /destinations/:slug`: photos, activities, nearby places and destinations, review summary
+- `GET /destinations/:slug/reviews`, `POST /destinations/:slug/reviews` (logged in, one per user)
+
+**Search, places, map**
+- `GET /search?q=…&(same filters)` returns `{ data, total, places, thingsToDo, interpretation }`
+- `GET /search/suggest?q=…`
+- `GET /places?kind=hotel|restaurant|shopping|transport&near|country`
+- `GET /map?layers=destinations,hotel,restaurant,shopping,transport&category&country&bbox`
+- `GET /go/:slug`: booking redirect
+
+**Account** (send `Authorization: Bearer <token>`)
+- `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`
+- `GET|PATCH|DELETE /me`, `POST /me/password`
+- `GET /me/favorites`, `GET /me/favorites/keys`, `POST /me/favorites`, `DELETE /me/favorites/:kind/:slug?list=saved|visited`, `POST /me/favorites/import`
+- `GET|POST /me/trips`, `GET|PATCH|DELETE /me/trips/:id`, `POST /me/trips/:id/stops`, `PATCH|DELETE /me/trips/:id/stops/:stopId`, `POST /me/trips/:id/reorder`
+
+## Project layout
 
 ```
 src/
-  index.ts              starts the server
-  app.ts                Express setup: security headers, CORS, rate limits, routes
-  config/env.ts         reads and validates .env
-  db/schema.ts          database tables (edit here, then npm run db:generate)
-  db/client.ts          database connection
-  db/seed.ts            development data
-  routes/               one file per group of endpoints
-  middleware/errors.ts  404 and error responses
-  lib/                  validation and error helpers
-drizzle/                SQL migrations (generated — commit them)
+  app.ts, index.ts        Express app (helmet, CORS, rate limits) and server
+  config/env.ts           Validated environment
+  db/schema.ts            Drizzle schema (all tables)
+  db/data/                Seed content: countries, destinations, experiences, articles…
+  db/seed.ts, reset.ts, images.ts
+  lib/                    Auth, destination queries, search parsing, ratings
+  routes/                 catalog, destinations, search, places, account
+drizzle/                  SQL migrations
 ```
 
-## Deploy (Render)
+## Deploying
 
-1. On [render.com](https://render.com): **New → Web Service** → connect this repo.
-2. Build command: `npm install && npm run build` · Start command: `npm start`.
-3. Environment variables: `DATABASE_URL` (Neon), `CORS_ORIGIN` (your Vercel frontend URL), `IP_HASH_SALT`, `NODE_ENV=production`.
-4. Run migrations once against Neon from your laptop: set `DATABASE_URL` in `.env` to the Neon URL and run `npm run db:migrate`.
-
-## Notes
-
-- Seed photos are from Wikimedia Commons (free licences that require credit). Each attraction stores `cover_image_url`, `cover_image_credit` and `cover_image_source_url` (the file page showing author and licence). Waza National Park and Limbe Wildlife Centre have no photo yet.
-- Businesses in the seed are **fictional demo listings** (names start with "Demo"). Attraction coordinates are approximate. Check both before launch.
-- Coming next: user accounts and auth, reviews, owner claims and dashboard, tours and Mobile Money/Stripe payments.
+Any Node host works (Render, Railway, Fly.io) with a Postgres database that has PostGIS (Neon, Supabase, RDS). Set the environment variables, run `npm run build && npm run db:migrate && npm run db:seed`, then `npm start`.
