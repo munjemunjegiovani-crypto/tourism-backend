@@ -15,6 +15,13 @@
       "when": 1790865634932,
       "tag": "0001_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790867829697,
+      "tag": "0002_attraction_photo_credit",
+      "breakpoints": true
     }
   ]
 }

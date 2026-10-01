@@ -104,6 +104,9 @@ export const attractions = pgTable(
     openingHours: jsonb("opening_hours"),
     bestSeason: text("best_season"),
     coverImageUrl: text("cover_image_url"),
+    // Photo credit shown under the image (required by Creative Commons licences)
+    coverImageCredit: text("cover_image_credit"),
+    coverImageSourceUrl: text("cover_image_source_url"),
     status: listingStatusEnum("status").notNull().default("draft"),
     ...timestamps,
   },

@@ -26,6 +26,8 @@ const baseSelect = {
   summaryFr: attractions.summaryFr,
   entryFee: attractions.entryFee,
   coverImageUrl: attractions.coverImageUrl,
+  coverImageCredit: attractions.coverImageCredit,
+  coverImageSourceUrl: attractions.coverImageSourceUrl,
   location: attractions.location,
   ...placeColumns,
 };

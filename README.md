@@ -99,5 +99,6 @@ drizzle/                SQL migrations (generated — commit them)
 
 ## Notes
 
+- Seed photos are from Wikimedia Commons (free licences that require credit). Each attraction stores `cover_image_url`, `cover_image_credit` and `cover_image_source_url` (the file page showing author and licence). Waza National Park and Limbe Wildlife Centre have no photo yet.
 - Businesses in the seed are **fictional demo listings** (names start with "Demo"). Attraction coordinates are approximate. Check both before launch.
 - Coming next: user accounts and auth, reviews, owner claims and dashboard, tours and Mobile Money/Stripe payments.

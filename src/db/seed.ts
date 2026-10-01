@@ -12,6 +12,18 @@ import { attractions, businesses, categories, cities, countries, regions } from 
 
 const pt = (lat: number, lng: number) => ({ x: lng, y: lat });
 
+/**
+ * Photo from Wikimedia Commons (free licence; the photographer must be credited).
+ * Special:FilePath serves the file at the requested width; the credit links to the
+ * file page, which shows the author and licence.
+ */
+const commons = (file: string) => ({
+  coverImageUrl: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=1600`,
+  coverImageCredit: "Wikimedia Commons",
+  coverImageSourceUrl: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file)}`,
+});
+const noPhoto = { coverImageUrl: null, coverImageCredit: null, coverImageSourceUrl: null };
+
 async function upsertReturningIds<T extends { slug: string }>(
   table: typeof regions | typeof cities | typeof attractions | typeof businesses | typeof countries,
   rows: T[],
@@ -85,6 +97,7 @@ async function main() {
   await upsertReturningIds(attractions, [
     {
       slug: "lobe-falls",
+      ...commons("Chutes_de_la_Lobe.jpg"),
       name: "Lobé Falls",
       cityId: c("kribi"),
       categoryId: cat("attraction", "waterfall"),
@@ -96,6 +109,7 @@ async function main() {
     },
     {
       slug: "kribi-beach",
+      ...commons("Beach_of_Kribi,_Cameroon.jpg"),
       name: "Kribi Beach",
       cityId: c("kribi"),
       categoryId: cat("attraction", "beach"),
@@ -107,6 +121,7 @@ async function main() {
     },
     {
       slug: "limbe-wildlife-centre",
+      ...noPhoto,
       name: "Limbe Wildlife Centre",
       cityId: c("limbe"),
       categoryId: cat("attraction", "nature"),
@@ -117,6 +132,7 @@ async function main() {
     },
     {
       slug: "limbe-botanic-garden",
+      ...commons("Botanic_garden_limbe.jpg"),
       name: "Limbe Botanic Garden",
       cityId: c("limbe"),
       categoryId: cat("attraction", "nature"),
@@ -127,6 +143,7 @@ async function main() {
     },
     {
       slug: "mount-cameroon",
+      ...commons("Mount_fako_(mount_Cameroon).jpg"),
       name: "Mount Cameroon",
       cityId: c("buea"),
       categoryId: cat("attraction", "mountain"),
@@ -138,6 +155,7 @@ async function main() {
     },
     {
       slug: "foumban-royal-palace",
+      ...commons("Bamun_sultan_palace.jpg"),
       name: "Royal Palace of Foumban",
       cityId: c("foumban"),
       categoryId: cat("attraction", "museum"),
@@ -148,6 +166,7 @@ async function main() {
     },
     {
       slug: "lake-dschang",
+      ...commons("Le_Lac_municipal_de_DSCHANG.jpg"),
       name: "Lake Dschang",
       cityId: c("dschang"),
       categoryId: cat("attraction", "nature"),
@@ -158,6 +177,7 @@ async function main() {
     },
     {
       slug: "waza-national-park",
+      ...noPhoto,
       name: "Waza National Park",
       cityId: c("waza"),
       categoryId: cat("attraction", "national-park"),
@@ -169,6 +189,7 @@ async function main() {
     },
     {
       slug: "rhumsiki-peak",
+      ...commons("Rhumsiki_with_Kapsiki_Peak_(after_sunrise),_Far_North_Province_of_Cameroon.jpg"),
       name: "Rhumsiki Peak",
       cityId: c("rhumsiki"),
       categoryId: cat("attraction", "landmark"),
