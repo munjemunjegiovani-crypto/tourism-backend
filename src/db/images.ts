@@ -19,12 +19,14 @@ import { destinations, images } from "./schema.js";
 
 const UA = `AfricaDiscover/1.0 (tourism platform; ${process.env.CONTACT_EMAIL ?? "contact via GitHub"})`;
 const MAX_PHOTOS = 5;
+// Wikimedia only serves thumbnails at fixed widths (330, 500, 960, 1280, 1920…); others get HTTP 429
+const STORED_WIDTH = 1280;
 const SKIP = /(map|locator|location|flag|coat[_ ]of[_ ]arms|logo|icon|diagram|relief|chart|graph|symbol|seal|emblem|signature|\.svg$|\.gif$|\.tif)/i;
 
 export function commonsImage(file: string, alt: string) {
   const name = file.replace(/^File:/, "").replace(/ /g, "_");
   return {
-    url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}?width=1600`,
+    url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}?width=${STORED_WIDTH}`,
     alt,
     credit: "Wikimedia Commons",
     license: null as string | null,
@@ -33,7 +35,7 @@ export function commonsImage(file: string, alt: string) {
 }
 
 async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(15_000) });
+  const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(40_000) });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json() as Promise<T>;
 }
@@ -89,14 +91,21 @@ async function commonsCredits(files: string[]) {
   return out;
 }
 
+/** Older rows were stored with a width Wikimedia no longer serves. */
+export async function fixStoredWidths() {
+  await db.execute(sql`UPDATE images SET url = regexp_replace(url, 'width=[0-9]+$', ${`width=${STORED_WIDTH}`}) WHERE url LIKE '%Special:FilePath%' AND url NOT LIKE ${`%width=${STORED_WIDTH}`}`);
+}
+
 export async function resolveImages({ all = false, quiet = true } = {}) {
   const log = (...a: unknown[]) => !quiet && console.log(...a);
+  await fixStoredWidths();
   const rows = await db
     .select({
       id: destinations.id,
       name: destinations.name,
       wikiTitle: destinations.wikiTitle,
-      photos: sql<number>`(SELECT count(*)::int FROM images i WHERE i.owner_type = 'destination' AND i.owner_id = ${destinations.id})`,
+      // "destinations.id" is written out in full: an unqualified "id" inside the subquery would mean images.id
+      photos: sql<number>`(SELECT count(*)::int FROM images i WHERE i.owner_type = 'destination' AND i.owner_id = destinations.id)`,
     })
     .from(destinations);
 
@@ -104,6 +113,7 @@ export async function resolveImages({ all = false, quiet = true } = {}) {
   await getJson("https://en.wikipedia.org/api/rest_v1/page/summary/Africa");
 
   let added = 0;
+  let skipped = 0;
   for (const d of rows) {
     if (!d.wikiTitle || (!all && d.photos >= 4)) continue;
     try {
@@ -121,6 +131,7 @@ export async function resolveImages({ all = false, quiet = true } = {}) {
       }
       log(`  ${d.name}: ${keep.length} photo(s)`);
     } catch (err) {
+      skipped++;
       log(`  ${d.name}: skipped (${(err as Error).message})`);
     }
   }
@@ -140,7 +151,7 @@ export async function resolveImages({ all = false, quiet = true } = {}) {
     }
   }
 
-  log(`Photos: ${added} added or updated.`);
+  log(`Photos: ${added} added or updated${skipped ? `, ${skipped} destination(s) skipped. Run the command again to retry them` : ""}.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

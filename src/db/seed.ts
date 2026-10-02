@@ -18,7 +18,7 @@ import { experiencesData } from "./data/experiences.js";
 import { articlesData } from "./data/articles.js";
 import { realPlaces, demoPlacesFor } from "./data/places.js";
 import { sampleReviewsFor } from "./data/reviews.js";
-import { commonsImage, resolveImages } from "./images.js";
+import { commonsImage, fixStoredWidths, resolveImages } from "./images.js";
 import { refreshRatings } from "../lib/ratings.js";
 
 export const allDestinations = [...cameroonDestinations, ...eastNorthDestinations, ...westSouthDestinations];
@@ -127,6 +127,7 @@ async function main() {
   const destId = (slug: string) => need(destinationIds, slug, "destination");
 
   // Hand-picked Commons photos go first (position 0); resolver adds more later
+  await fixStoredWidths();
   for (const d of allDestinations) {
     for (const [i, file] of (d.photos ?? []).entries()) {
       await db
