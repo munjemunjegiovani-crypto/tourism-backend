@@ -60,6 +60,20 @@ export const coverImageSql = (destIdColumn: SQL) => sql`(
   ORDER BY i.position LIMIT 1
 )`;
 
+/** Experience cover: its cover destination's photo, else the best photo among its linked destinations. */
+export const experienceCoverSql = (expAlias = "e") => {
+  const e = sql.raw(expAlias);
+  return sql`COALESCE(
+    ${coverImageSql(sql`${e}.cover_destination_id`)},
+    (SELECT json_build_object('url', i.url, 'alt', i.alt, 'credit', i.credit, 'sourceUrl', i.source_url)
+     FROM experience_destinations ed
+     JOIN destinations dd ON dd.id = ed.destination_id
+     JOIN images i ON i.owner_type = 'destination' AND i.owner_id = dd.id
+     WHERE ed.experience_id = ${e}.id
+     ORDER BY dd.popularity DESC, i.position LIMIT 1)
+  )`;
+};
+
 /** Accent-insensitive LIKE pattern: lowercases and strips accents in JS; SQL side uses translate(). */
 const ACCENTED = "àáâãäåçèéêëìíîïñòóôõöùúûüýÿ";
 const PLAIN = "aaaaaaceeeeiiiinooooouuuuyy";

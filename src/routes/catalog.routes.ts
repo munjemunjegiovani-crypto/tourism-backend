@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client.js";
-import { coverImageSql, findDestinations } from "../lib/destinations.js";
+import { coverImageSql, experienceCoverSql, findDestinations } from "../lib/destinations.js";
 import { notFound } from "../lib/http-error.js";
 import { parse, slugParam } from "../lib/validation.js";
 
@@ -67,7 +67,7 @@ catalogRouter.get("/countries/:slug", async (req, res) => {
       FROM cities ci WHERE ci.country_id = ${country.id}
       ORDER BY ci.popular DESC, ci.name`),
     db.execute(sql`
-      SELECT e.slug, e.name, e.emoji, e.tagline, e.sort_order, ${coverImageSql(sql`e.cover_destination_id`)} AS image
+      SELECT e.slug, e.name, e.emoji, e.tagline, e.sort_order, ${experienceCoverSql()} AS image
       FROM experiences e
       WHERE EXISTS (SELECT 1 FROM experience_destinations ed JOIN destinations d ON d.id = ed.destination_id
                     WHERE ed.experience_id = e.id AND d.country_id = ${country.id})
@@ -91,7 +91,7 @@ catalogRouter.get("/countries/:slug", async (req, res) => {
 
 const experienceSummarySql = sql`
   e.slug, e.name, e.emoji, e.tagline, e.typical_duration AS "typicalDuration", e.price_from AS "priceFrom",
-  ${coverImageSql(sql`e.cover_destination_id`)} AS image,
+  ${experienceCoverSql()} AS image,
   (SELECT COUNT(*)::int FROM experience_destinations ed WHERE ed.experience_id = e.id) AS "destinationCount"`;
 
 catalogRouter.get("/experiences", async (_req, res) => {
